@@ -7,12 +7,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Iris {
-    public static List<LabeledPoint> getDataset() {
+    public static List<LabeledPoint> getDataset(boolean trainOrTest) {
         try {
             List<LabeledPoint> ret = new ArrayList<LabeledPoint>();
-            BufferedReader br = new BufferedReader(
-                    new InputStreamReader(new FileInputStream(Iris.class.getResource("bezdekIris.data").getPath())));
-            String buffer;
+            BufferedReader br = null;
+            if (trainOrTest)
+                br = new BufferedReader(
+                        new InputStreamReader(new FileInputStream(Iris.class.getResource("svmtest.train").getPath())));
+            else
+                br = new BufferedReader(
+                        new InputStreamReader(new FileInputStream(Iris.class.getResource("svmtest.test").getPath())));
+            String buffer = null;
             while ((buffer = br.readLine()) != null) {
                 String[] tmp = buffer.split(",");
                 double label = 0.0;

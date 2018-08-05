@@ -1,21 +1,22 @@
 package com.github.conchsk.mysvm;
 
-import org.apache.commons.math3.linear.Array2DRowRealMatrix;
-import org.apache.commons.math3.linear.DefaultRealMatrixPreservingVisitor;
+import java.util.List;
+
+import com.github.conchsk.mysvm.classical.LinearKernel;
+import com.github.conchsk.mysvm.classical.MySVM;
+import com.github.conchsk.mysvm.dataset.Iris;
+import com.github.conchsk.mysvm.dataset.LabeledPoint;
 
 public class Test {
     public static void main(String[] args) {
-        //System.out.println(Iris.getDataset());
-        double[][] t = new double[10][10];
-        for (int i = 0; i < 10; ++i)
-            for (int j = 0; j < 10; ++j)
-                t[i][j] = i * 10 + j;
-        Array2DRowRealMatrix m = new Array2DRowRealMatrix(t);
-        m.walkInRowOrder(new DefaultRealMatrixPreservingVisitor() {
-            @Override
-            public void visit(int row, int column, double value) {
-                System.out.println(value);
-            }
-        });
+        List<LabeledPoint> trainData = Iris.getDataset(true);
+        List<LabeledPoint> testData = Iris.getDataset(false);
+        MySVM svm = new MySVM();
+        svm.fit(trainData, 200, 0.001, 0.001, new LinearKernel());
+        System.out.println(svm.alpha);
+        for (LabeledPoint lp : testData) {
+            double predict = svm.predict(lp);
+            System.out.println( "label is: " + lp.label + "; predict is: " + predict);
+        }
     }
 }
