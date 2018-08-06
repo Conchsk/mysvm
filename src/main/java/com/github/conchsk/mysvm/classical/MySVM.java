@@ -68,7 +68,7 @@ public class MySVM {
         double H = 0;
 
         double s = y1 * y2;// sign (represent y1 == y2 or y1 != y2)
-        if (s == 1) {
+        if (s == -1) {
             L = Math.max(0, alph2 - alph1);
             H = Math.min(C, C + alph2 - alph1);
         } else {
@@ -81,7 +81,7 @@ public class MySVM {
         double k11 = kernel.compute(features.getRowVector(i1), features.getRowVector(i1));
         double k12 = kernel.compute(features.getRowVector(i1), features.getRowVector(i2));
         double k22 = kernel.compute(features.getRowVector(i2), features.getRowVector(i2));
-        double eta = 2 * k12 - k11 + k22;
+        double eta = 2 * k12 - k11 - k22;
 
         double a2 = 0.0;
         // positive definite
@@ -132,11 +132,9 @@ public class MySVM {
             if (i1 != -1) {
                 if (takeStep(i1, i2) == 1)
                     return 1;
-            } else {
-                i1 = i2;
-                while (i1 == i2)
-                    i1 = rand.nextInt(alpha.getDimension());
-                if (takeStep(i1, i2) == 1)
+            }
+            for (int i = 0; i < alpha.getDimension(); ++i) {
+                if (takeStep(i, i2) == 1)
                     return 1;
             }
         }

@@ -12,7 +12,7 @@ public class Test {
         List<LabeledPoint> trainData = Iris.getDataset(true);
         List<LabeledPoint> testData = Iris.getDataset(false);
         MySVM svm = new MySVM();
-        svm.fit(trainData, 200, 0.001, 0.001, new LinearKernel());
+        svm.fit(trainData, 1.0, 0.001, 0.001, new LinearKernel());
         System.out.println(svm.alpha);
         for (LabeledPoint lp : testData) {
             double predict = svm.predict(lp);
