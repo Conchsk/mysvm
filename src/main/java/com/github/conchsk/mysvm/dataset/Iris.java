@@ -12,23 +12,15 @@ public class Iris {
             List<LabeledPoint> ret = new ArrayList<LabeledPoint>();
             BufferedReader br = null;
             if (trainOrTest)
-                br = new BufferedReader(
-                        new InputStreamReader(new FileInputStream(Iris.class.getResource("svmtest.train").getPath())));
+                br = new BufferedReader(new InputStreamReader(new FileInputStream(
+                        Iris.class.getClassLoader().getResource("train.csv").getPath())));
             else
-                br = new BufferedReader(
-                        new InputStreamReader(new FileInputStream(Iris.class.getResource("svmtest.test").getPath())));
+                br = new BufferedReader(new InputStreamReader(new FileInputStream(
+                        Iris.class.getClassLoader().getResource("test.csv").getPath())));
             String buffer = null;
             while ((buffer = br.readLine()) != null) {
                 String[] tmp = buffer.split(",");
-                double label = 0.0;
-                if (tmp[4].equals("Iris-setosa"))
-                    label = 0.0;
-                else if (tmp[4].equals("Iris-versicolor"))
-                    label = 1.0;
-                else
-                    label = 2.0;
-                ret.add(new LabeledPoint(new double[] { Double.valueOf(tmp[0]), Double.valueOf(tmp[1]),
-                        Double.valueOf(tmp[2]), Double.valueOf(tmp[3]) }, label));
+                ret.add(new LabeledPoint(new double[]{Double.valueOf(tmp[0]), Double.valueOf(tmp[1])}, Double.valueOf(tmp[4])));
             }
             br.close();
             return ret;
