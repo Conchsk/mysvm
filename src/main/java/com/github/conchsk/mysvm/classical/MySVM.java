@@ -11,29 +11,18 @@ import org.apache.commons.math3.linear.RealVector;
 
 public class MySVM {
     private RealMatrix features;
-    private RealVector label;
+    private RealVector labels;
     private double C;
     private double tol;
     private KernelInf kernel;
     private double eps;
 
     public double b;
-    public RealVector alpha;
+    public RealVector alphas;
 
-    public void fit(List<LabeledPoint> data, double C, double tol, KernelInf kernel) {
-        int N = data.size();
-        int D = data.get(0).features.length;
-        double[][] features = new double[N][D];
-        double[] label = new double[N];
-        for (int i = 0; i < N; ++i) {
-            label[i] = data.get(i).label;
-            double[] featuresTmp = data.get(i).features;
-            for (int j = 0; j < D; ++j)
-                features[i][j] = featuresTmp[j];
-        }
-
+    public void fit(double[][] features, double[] labels, double C, double tol, KernelInf kernel) {
         this.features = new BlockRealMatrix(features);
-        this.label = new ArrayRealVector(label);
+        this.labels = new ArrayRealVector(labels);
         this.C = C;
         this.tol = tol;
         this.kernel = kernel;

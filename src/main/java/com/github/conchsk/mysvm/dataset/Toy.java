@@ -1,8 +1,6 @@
 package com.github.conchsk.mysvm.dataset;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class Toy extends DatasetBase {
