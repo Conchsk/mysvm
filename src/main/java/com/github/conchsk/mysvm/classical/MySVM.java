@@ -1,9 +1,6 @@
 package com.github.conchsk.mysvm.classical;
 
-import java.util.List;
-
 import com.github.conchsk.mysvm.dataset.LabeledPoint;
-
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.BlockRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
@@ -12,13 +9,13 @@ import org.apache.commons.math3.linear.RealVector;
 public class MySVM {
     private RealMatrix features;
     private RealVector labels;
-    private double C;
-    private double tol;
+    private double C, tol, eps;
     private KernelInf kernel;
-    private double eps;
 
-    public double b;
-    public RealVector alphas;
+    private int N;
+    private double b;
+    public RealVector alphaVector;
+    private RealMatrix kernelMatrix;
 
     public void fit(double[][] features, double[] labels, double C, double tol, KernelInf kernel) {
         this.features = new BlockRealMatrix(features);
@@ -36,11 +33,11 @@ public class MySVM {
     }
 
     private double calcU(RealVector x) {
-        ArrayRealVector kxx = new ArrayRealVector(label.getDimension());
-        for (int i = 0; i < label.getDimension(); ++i)
-            if (alpha.getEntry(i) > 0.0)
+        ArrayRealVector kxx = new ArrayRealVector(N);
+        for (int i = 0; i < N; ++i)
+            if (alphaVector.getEntry(i) > 0.0)
                 kxx.setEntry(i, kernel.compute(features.getRowVector(i), x));
-        return label.ebeMultiply(alpha).dotProduct(kxx) - b;
+        return labels.ebeMultiply(alphaVector).dotProduct(kxx) - b;
     }
 
     private int takeStep(int i1, int i2) {
@@ -48,10 +45,10 @@ public class MySVM {
             return 0;
         RealVector X1 = features.getRowVector(i1);
         RealVector X2 = features.getRowVector(i2);
-        double y1 = label.getEntry(i1);
-        double y2 = label.getEntry(i2);
-        double alph1 = alpha.getEntry(i1);
-        double alph2 = alpha.getEntry(i2);
+        double y1 = labels.getEntry(i1);
+        double y2 = labels.getEntry(i2);
+        double alph1 = alphaVector.getEntry(i1);
+        double alph2 = alphaVector.getEntry(i2);
         double E1 = calcU(X1) - y1;
         double E2 = calcU(X2) - y2;
         double L = 0.0;
@@ -68,9 +65,9 @@ public class MySVM {
         if (Math.abs(L - H) < eps)
             return 0;
 
-        double k11 = kernel.compute(X1, X1);
-        double k12 = kernel.compute(X1, X2);
-        double k22 = kernel.compute(X2, X2);
+        double k11 = kernelMatrix.getEntry(i1, i1);
+        double k12 = kernelMatrix.getEntry(i1, i2);
+        double k22 = kernelMatrix.getEntry(i2, i2);
         double eta = k11 + k22 - 2 * k12;
 
         double a2 = 0.0;
@@ -97,8 +94,8 @@ public class MySVM {
         double a1 = alph1 + s * (alph2 - a2);
 
         // store alpha
-        alpha.setEntry(i1, a1);
-        alpha.setEntry(i2, a2);
+        alphaVector.setEntry(i1, a1);
+        alphaVector.setEntry(i2, a2);
 
         // computing the threshold
         double b1 = E1 + y1 * (a1 - alph1) * k11 + y2 * (a2 - alph2) * k12 + b;
@@ -108,16 +105,16 @@ public class MySVM {
     }
 
     private int examineExample(int i2) {
-        double y2 = label.getEntry(i2);
-        double alpha2 = alpha.getEntry(i2);
+        double y2 = labels.getEntry(i2);
+        double alpha2 = alphaVector.getEntry(i2);
         double E2 = calcU(features.getRowVector(i2)) - y2;
         double r2 = E2 * y2;
         if ((r2 < -tol && alpha2 < C) || (r2 > tol && alpha2 > 0)) {
             int i1 = -1;
             double deltaE = 0.0;
-            for (int i = 0; i < alpha.getDimension(); ++i) {
-                double yTmp = label.getEntry(i);
-                double alphaTmp = alpha.getEntry(i);
+            for (int i = 0; i < N; ++i) {
+                double yTmp = labels.getEntry(i);
+                double alphaTmp = alphaVector.getEntry(i);
                 if (alphaTmp > 0 && alphaTmp < C) {
                     double ETmp = calcU(features.getRowVector(i)) - yTmp;
                     double deltaETmp = Math.abs(ETmp - E2);
@@ -131,7 +128,7 @@ public class MySVM {
                 if (takeStep(i1, i2) == 1)
                     return 1;
             }
-            for (int i = 0; i < alpha.getDimension(); ++i) {
+            for (int i = 0; i < N; ++i) {
                 if (takeStep(i, i2) == 1)
                     return 1;
             }
@@ -141,8 +138,14 @@ public class MySVM {
 
     private void smo() {
         // initialize
+        N = features.getRowDimension();
         b = 0.0;
-        alpha = new ArrayRealVector(label.getDimension());
+        alphaVector = new ArrayRealVector(N);
+        double[][] tempKernelMatrix = new double[N][N];
+        for (int i = 0; i < N; ++i)
+            for (int j = i; j < N; ++j)
+                tempKernelMatrix[i][j] = tempKernelMatrix[j][i] = kernel.compute(features.getRowVector(i), features.getRowVector(j));
+        kernelMatrix = new BlockRealMatrix(tempKernelMatrix);
 
         // main routine
         int numChanged = 0;
@@ -150,11 +153,11 @@ public class MySVM {
         while (numChanged > 0 || examineAll == 1) {
             numChanged = 0;
             if (examineAll == 1) {
-                for (int i = 0; i < alpha.getDimension(); ++i)
+                for (int i = 0; i < N; ++i)
                     numChanged += examineExample(i);
             } else {
-                for (int i = 0; i < alpha.getDimension(); ++i) {
-                    double alphaI = alpha.getEntry(i);
+                for (int i = 0; i < N; ++i) {
+                    double alphaI = alphaVector.getEntry(i);
                     if (alphaI > 0 && alphaI < C)
                         numChanged += examineExample(i);
                 }
